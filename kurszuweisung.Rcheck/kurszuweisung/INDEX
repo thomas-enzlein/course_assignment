@@ -1,0 +1,7 @@
+evaluate_dashboard      Optimierungs-Ergebnisse auswerten
+example_data_path       Beispieldaten-Pfade abrufen
+export_results          Ergebnisse exportieren
+generate_courses        Kurse generieren
+generate_students       Schueler mit Praeferenzen generieren
+import_data             Daten importieren und validieren
+optimize_courses        Kurswahl optimieren

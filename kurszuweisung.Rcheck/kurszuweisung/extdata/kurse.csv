@@ -1,0 +1,51 @@
+"course_id","course_name","min_capacity","max_capacity"
+"C001","Mathematik-Olympiade",4,30
+"C002","Informatik (Programmieren)",4,15
+"C003","Web-Design",4,15
+"C004","Robotik",4,15
+"C005","Physik-Experimente",4,15
+"C006","Chemie Labor",4,15
+"C007","Biologie - Ökosystem Wald",4,30
+"C008","Astronomie",4,30
+"C009","Spanisch für Anfänger",4,30
+"C010","Französisch Konversation",4,30
+"C011","Latein Lektüre",4,30
+"C012","Altgriechisch",4,30
+"C013","English Debate Club",4,30
+"C014","Kreatives Schreiben",4,30
+"C015","Schülerzeitung",4,30
+"C016","Theatergruppe (Schauspiel)",4,30
+"C017","Bühnenbild & Technik",4,30
+"C018","Chor",4,30
+"C019","Schulband",4,30
+"C020","Kunst: Acrylmalerei",4,15
+"C021","Kunst: Fotografie",4,15
+"C022","Töpferei",4,15
+"C023","Geschichte: Der Zweite Weltkrieg",4,30
+"C024","Politik und Wirtschaft",4,30
+"C025","Philosophie (Ethik)",4,30
+"C026","Psychologie",4,30
+"C027","Soziologie",4,30
+"C028","Geographie: Klimawandel",4,30
+"C029","Kochen & Backen",4,15
+"C030","Nähen & Textildesign",4,15
+"C031","Fußball",4,30
+"C032","Basketball",4,30
+"C033","Volleyball",4,30
+"C034","Leichtathletik",4,30
+"C035","Schwimmen",4,30
+"C036","Tanz (Hip-Hop)",4,30
+"C037","Yoga & Entspannung",4,30
+"C038","Klettern",4,30
+"C039","Erste Hilfe (Sanitäter)",4,30
+"C040","Schachclub",4,30
+"C041","Brettspiele & Strategie",4,30
+"C042","E-Sports AG",4,30
+"C043","Gartenarbeit (Schulgarten)",4,30
+"C044","Tierschutz AG",4,30
+"C045","Mediation & Streitschlichtung",4,30
+"C046","Jugend forscht",4,30
+"C047","Wirtschaft - StartUp-Gründung",4,30
+"C048","Eventmanagement (Schulfeste)",4,30
+"C049","Jahrbuch-Redaktion",4,30
+"C050","Gitarre für Anfänger",4,30

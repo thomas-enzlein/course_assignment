@@ -1,0 +1,42 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+.RDataTmp
+
+# User-specific files
+.Rproj.user/
+
+# Listing/manuscript files
+*.pdf
+*.log
+*.aux
+*.toc
+*.snm
+*.nav
+*.out
+*.fdb_latexmk
+*.fls
+
+# renv files (except the ones needed for restoration)
+renv/library/
+renv/python/
+renv/staging/
+renv/local/
+
+# Build artifacts
+.Rcheck/
+*.o
+*.so
+*.dll
+*.exe
+
+# Local test outputs and sample data
+Beispieldaten/
+Ergebnisse/
+
+# App-specific temp files
+.DS_Store
+Thumbs.db
