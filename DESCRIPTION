@@ -14,7 +14,16 @@ Depends:
 Imports: 
     ompr,
     ompr.roi,
-    ROI.plugin.glpk
+    ROI.plugin.glpk,
+    shiny,
+    shinyFiles,
+    bslib,
+    shinyjs,
+    DT,
+    plotly,
+    jsonlite,
+    utils,
+    stats
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

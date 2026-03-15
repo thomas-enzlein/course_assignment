@@ -45,7 +45,7 @@ evaluate_dashboard <- function(res, students, courses) {
   cat(sprintf("1. Wahl erhalten: %4d (%5.1f %%)\n", choice_1, (choice_1 / total_students) * 100))
   cat(sprintf("2. Wahl erhalten: %4d (%5.1f %%)\n", choice_2, (choice_2 / total_students) * 100))
   cat(sprintf("3. Wahl erhalten: %4d (%5.1f %%)\n", choice_3, (choice_3 / total_students) * 100))
-  unassigned <- total_students - (choice_1 + choice_2 + choice_3)
+  unassigned <- total_students - assigned_students
   cat(sprintf("Nicht zugewiesen: %4d (%5.1f %%)\n\n", unassigned, (unassigned / total_students) * 100))
 
   # 2. Die Reste-Rampe
@@ -70,6 +70,13 @@ evaluate_dashboard <- function(res, students, courses) {
 
   # 3. Kurs-Statistiken
   cat("--- KURS-STATUS ---\n")
+  
+  # Interesse berechnen (Wie viele Schueler hatten den Kurs als Wunsch?)
+  all_wishes <- c(students$first_choice, students$second_choice, students$third_choice)
+  interest_counts <- as.data.frame(table(all_wishes))
+  names(interest_counts) <- c("course_id", "total_interest")
+  interest_counts$course_id <- as.character(interest_counts$course_id)
+
   # Teilnehmende an jedem Kurs zaehlen
   if (assigned_students > 0) {
     counts <- as.data.frame(table(assignments$course_id))
@@ -81,7 +88,10 @@ evaluate_dashboard <- function(res, students, courses) {
 
   # Merge mit allen Kursen
   course_stats <- merge(courses, counts, by = "course_id", all.x = TRUE)
+  course_stats <- merge(course_stats, interest_counts, by = "course_id", all.x = TRUE)
+  
   course_stats$participants[is.na(course_stats$participants)] <- 0
+  course_stats$total_interest[is.na(course_stats$total_interest)] <- 0
 
   # Volle Kurse
   full_courses <- course_stats[course_stats$participants >= course_stats$max_capacity, ]

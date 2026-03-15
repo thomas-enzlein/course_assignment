@@ -1,0 +1,7 @@
+{
+  "students_path": "C:\\Users\\Thomas\\Dropbox\\R\\kurszuweisung\\Beispieldaten\\schueler.csv",
+  "courses_path": "C:\\Users\\Thomas\\Dropbox\\R\\kurszuweisung\\Beispieldaten\\kurse.csv",
+  "time_limit": 15,
+  "enforce_survival": false,
+  "last_updated": "2026-03-15 13:41:37"
+}

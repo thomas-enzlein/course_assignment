@@ -32,10 +32,12 @@ renv/local/
 *.so
 *.dll
 *.exe
+*.tar.gz
 
 # Local test outputs and sample data
 Beispieldaten/
 Ergebnisse/
+kurszuweisung.Rcheck/
 
 # App-specific temp files
 .DS_Store

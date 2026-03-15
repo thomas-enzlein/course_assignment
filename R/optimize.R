@@ -24,9 +24,15 @@ optimize_courses <- function(students, courses, enforce_survival = FALSE, time_l
 
   # Scores befuellen
   for (i in 1:n_students) {
-    c1_idx <- which(courses$course_id == students$first_choice[i])
-    c2_idx <- which(courses$course_id == students$second_choice[i])
-    c3_idx <- which(courses$course_id == students$third_choice[i])
+    # HIER: Schutz vor Mehrfachwahl desselben Kurses
+    # Wir nehmen nur die jeweils höchste Priorität
+    c1 <- students$first_choice[i]
+    c2 <- if (students$second_choice[i] != c1) students$second_choice[i] else ""
+    c3 <- if (students$third_choice[i] != c1 && students$third_choice[i] != c2) students$third_choice[i] else ""
+
+    c1_idx <- which(courses$course_id == c1)
+    c2_idx <- which(courses$course_id == c2)
+    c3_idx <- if (c3 != "") which(courses$course_id == c3) else integer(0)
 
     if (length(c1_idx) == 1) score_matrix[i, c1_idx] <- 5 + students$tie_breaker[i]
     if (length(c2_idx) == 1) score_matrix[i, c2_idx] <- 3 + students$tie_breaker[i]
@@ -47,11 +53,14 @@ optimize_courses <- function(students, courses, enforce_survival = FALSE, time_l
     # Jeder Schueler bekommt maximal 1 Kurs (<= 1 erlaubt "Reste-Rampe")
     add_constraint(sum_expr(x[i, j], j = 1:n_courses) <= 1, i = 1:n_students) |>
 
-    # Kapazitaet nach oben (max 30, nur aktiv wenn Kurs stattfindet)
+    # Kapazitaet nach oben
     add_constraint(sum_expr(x[i, j], i = 1:n_students) <= max_cap[j] * y[j], j = 1:n_courses) |>
 
-    # Kapazitaet nach unten (min 4, nur aktiv wenn Kurs stattfindet)
-    add_constraint(sum_expr(x[i, j], i = 1:n_students) >= min_cap[j] * y[j], j = 1:n_courses)
+    # Kapazitaet nach unten
+    add_constraint(sum_expr(x[i, j], i = 1:n_students) >= min_cap[j] * y[j], j = 1:n_courses) |>
+
+    # STRENG: Keine Zuweisung an Kurse, die nicht gewaehlt wurden
+    add_constraint(x[i, j] == 0, i = 1:n_students, j = 1:n_courses, score_matrix[i, j] == -100)
 
   # Je nach Flag die Zielfunktion setzen
   if (enforce_survival) {
