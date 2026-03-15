@@ -15,9 +15,9 @@
 example_data_path <- function(type = c("students", "courses")) {
   type <- match.arg(type)
   file_name <- switch(type,
-                      students = "schueler.csv",
-                      courses = "kurse.csv")
-  
+    students = "schueler.csv",
+    courses = "kurse.csv")
+
   # system.file sucht im inst/extdata Ordner des installierten Paketes
   path <- system.file("extdata", file_name, package = "kurszuweisung", mustWork = TRUE)
   return(path)
