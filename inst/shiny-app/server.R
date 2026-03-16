@@ -7,8 +7,6 @@ library(shiny)
 library(shinyjs)
 library(DT)
 library(plotly)
-library(rmarkdown)
-library(pandoc)
 library(kurszuweisung)
 library(shinyFiles) # Added shinyFiles library
 
