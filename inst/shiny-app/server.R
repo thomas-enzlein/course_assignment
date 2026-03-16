@@ -7,6 +7,8 @@ library(shiny)
 library(shinyjs)
 library(DT)
 library(plotly)
+library(rmarkdown)
+library(pandoc)
 library(kurszuweisung)
 library(shinyFiles) # Added shinyFiles library
 
@@ -18,6 +20,17 @@ server <- function(input, output, session) {
   config <- load_config()
 
   # Initial reactive values
+  # --- Pandoc Setup ---
+  # Falls Pandoc nicht gefunden wird, versuchen wir es ueber das 'pandoc' R-Paket zu lokalisieren
+  if (!rmarkdown::pandoc_available()) {
+    try({
+      p_path <- pandoc::pandoc_locate()
+      if (!is.null(p_path)) {
+        Sys.setenv(RSTUDIO_PANDOC = p_path)
+      }
+    }, silent = TRUE)
+  }
+
   rv <- reactiveValues(
     students = NULL,
     courses = NULL,
@@ -312,6 +325,83 @@ server <- function(input, output, session) {
     display_df |> datatable(rownames = FALSE)
   })
 
+  # --- COURSE CONFIG (EDITABLE) ---
+  output$table_courses_config <- renderDT({
+    req(rv$courses)
+    # Zeige nur relevante Spalten zum Editieren (Kategorie ist nur für Testdaten relevant)
+    cols_wanted <- c("course_id", "course_name", "min_capacity", "max_capacity")
+    cols <- intersect(names(rv$courses), cols_wanted)
+    
+    df <- rv$courses[, cols]
+    
+    # Dynamische Header (falls course_name fehlt)
+    friendly_names <- c(
+      "course_id" = "Kurs-ID", 
+      "course_name" = "Kursname", 
+      "min_capacity" = "Min-Cap", 
+      "max_capacity" = "Max-Cap"
+    )
+    colnames(df) <- friendly_names[cols]
+    
+    # Welche Spalten sind editierbar? (Nur Min-Cap und Max-Cap)
+    # Beachte: JS-Index ist 0-basiert.
+    editable_cols <- which(cols %in% c("min_capacity", "max_capacity")) - 1
+    disabled_cols <- setdiff(seq_along(cols) - 1, editable_cols)
+    
+    datatable(
+      df, 
+      selection = "none", 
+      editable = list(target = "cell", disable = list(columns = disabled_cols)),
+      rownames = FALSE,
+      options = list(pageLength = 10, scrollX = TRUE)
+    )
+  })
+
+  # Proxy für Updates
+  proxy_courses <- dataTableProxy("table_courses_config")
+
+  observeEvent(input$table_courses_config_cell_edit, {
+    info <- input$table_courses_config_cell_edit
+    
+    # Dynamische Zuordnung der Spalte basierend auf der Anzeige
+    cols_wanted <- c("course_id", "course_name", "min_capacity", "max_capacity")
+    cols_shown <- intersect(names(rv$courses), cols_wanted)
+    
+    col_name <- cols_shown[info$col + 1]
+    row_idx <- info$row
+    val <- as.integer(info$value)
+    
+    if (is.na(val) || val < 0) {
+      showNotification("Ungültiger Wert. Bitte eine positive Zahl eingeben.", type = "error")
+      return()
+    }
+
+    if (col_name %in% c("min_capacity", "max_capacity")) {
+      res <- tryCatch({
+        kurszuweisung::update_course_capacity(rv$courses, row_idx, col_name, val)
+      }, error = function(e) {
+        showNotification(paste("Fehler bei der Aktualisierung:", e$message), type = "error")
+        NULL
+      })
+      
+      if (!is.null(res)) {
+        rv$courses <- res
+        showNotification(sprintf("Vorgabe für '%s' aktualisiert.", rv$courses$course_name[row_idx]), type = "message")
+      }
+    }
+  })
+
+  # Permanent Speichern
+  observeEvent(input$btn_save_courses, {
+    req(rv$courses, rv$courses_path)
+    tryCatch({
+      write.csv(rv$courses, rv$courses_path, row.names = FALSE)
+      showNotification("Änderungen permanent in der CSV gespeichert!", type = "message")
+    }, error = function(e) {
+      showNotification(paste("Speichern fehlgeschlagen:", e$message), type = "error")
+    })
+  })
+
   output$table_unassigned <- renderDT({
     req(rv$result, rv$students, rv$courses)
     eval_res <- kurszuweisung::evaluate_dashboard(
@@ -330,10 +420,10 @@ server <- function(input, output, session) {
     df$c2 <- vapply(df$second_choice, map_course, character(1))
     df$c3 <- vapply(df$third_choice, map_course, character(1))
 
-    display_df <- df[, c("student_id", "student_name", "c1", "c2", "c3")]
-    colnames(display_df) <- c("Schüler-ID", "Name", "1. Wunsch", "2. Wunsch", "3. Wunsch")
+    display_df <- df[, c("student_id", "student_name", "c1", "reason_1", "c2", "reason_2", "c3", "reason_3")]
+    colnames(display_df) <- c("ID", "Name", "1. Wunsch", "Grund 1", "2. Wunsch", "Grund 2", "3. Wunsch", "Grund 3")
 
-    display_df |> datatable(rownames = FALSE)
+    display_df |> datatable(rownames = FALSE, options = list(pageLength = 20, scrollX = TRUE))
   })
 
   # --- Download Handler ---
@@ -351,6 +441,37 @@ server <- function(input, output, session) {
         file.path(temp_dir, "kurs_zusammenfassung.csv")
       )
       zip(file, files_to_zip, extras = "-j")
+    }
+  )
+
+  # --- PDF Report Handler ---
+  output$export_pdf <- downloadHandler(
+    filename = function() {
+      paste("kurszuweisung-bericht-", Sys.Date(), ".pdf", sep = "")
+    },
+    content = function(file) {
+      req(rv$result, rv$students, rv$courses)
+      
+      report_path <- system.file("reports/result_report.Rmd", package = "kurszuweisung")
+      if (report_path == "") {
+        report_path <- "../reports/result_report.Rmd"
+      }
+      
+      showNotification("PDF-Bericht wird gerendert...", type = "message")
+      
+      temp_report <- file.path(tempdir(), "report.Rmd")
+      file.copy(report_path, temp_report, overwrite = TRUE)
+      
+      rmarkdown::render(
+        temp_report, 
+        output_file = file,
+        params = list(
+          result = rv$result,
+          students = rv$students,
+          courses = rv$courses
+        ),
+        envir = new.env(parent = globalenv())
+      )
     }
   )
 }

@@ -1,0 +1,75 @@
+---
+title: "Kurszuweisung: Ergebnisbericht"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+params:
+  result: NULL
+  students: NULL
+  courses: NULL
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(kurszuweisung)
+eval_res <- kurszuweisung::evaluate_dashboard(params$result, params$students, params$courses)
+```
+
+# Zusammenfassung
+
+Die Optimierung wurde erfolgreich abgeschlossen. Hier ist die Übersicht der Schülerzufriedenheit:
+
+- **1. Wahl erhalten:** `r eval_res$choice_1` (`r sprintf("%.1f %%", (eval_res$choice_1 / nrow(params$students)) * 100)`)
+- **2. Wahl erhalten:** `r eval_res$choice_2` (`r sprintf("%.1f %%", (eval_res$choice_2 / nrow(params$students)) * 100)`)
+- **3. Wahl erhalten:** `r eval_res$choice_3` (`r sprintf("%.1f %%", (eval_res$choice_3 / nrow(params$students)) * 100)`)
+- **Nicht zugewiesen:** `r eval_res$unassigned` (`r sprintf("%.1f %%", (eval_res$unassigned / nrow(params$students)) * 100)`)
+
+------------------------------------------------------------------------
+
+# Kurs-Zuweisungen
+
+Die folgende Tabelle zeigt die Zuweisungen sortiert nach Kursen.
+
+```{r assignments}
+assignments <- params$result$assignments
+df <- merge(assignments, params$students, by = "student_id")
+df <- merge(df, params$courses[, c("course_id", "course_name")], by = "course_id")
+
+# Sortierung
+df <- df[order(df$course_name, df$student_name), ]
+
+display_df <- df[, c("course_name", "student_name", "student_id")]
+colnames(display_df) <- c("Kurs", "Schüler-Name", "ID")
+
+knitr::kable(display_df, longtable = TRUE)
+```
+
+\newpage
+
+# Warteliste (Nicht zugewiesen)
+
+Schüler, für die kein Kurs gefunden werden konnte.
+
+```{r unassigned}
+unassigned_df <- eval_res$rest_students
+if (nrow(unassigned_df) > 0) {
+  display_un <- unassigned_df[, c("student_name", "student_id", "reason_1", "reason_2", "reason_3")]
+  colnames(display_un) <- c("Name", "ID", "Grund 1", "Grund 2", "Grund 3")
+  knitr::kable(display_un)
+} else {
+  cat("Alle Schüler wurden erfolgreich zugewiesen.")
+}
+```
+
+------------------------------------------------------------------------
+
+# Kurs-Statistiken
+
+Auslastung der angebotenen Kurse.
+
+```{r course-stats}
+stats <- eval_res$course_stats[, c("course_name", "participants", "max_capacity", "min_capacity")]
+colnames(stats) <- c("Kurs", "Teilnehmer", "Max", "Min")
+knitr::kable(stats)
+```

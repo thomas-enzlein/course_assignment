@@ -138,3 +138,26 @@ export_results <- function(result, courses, students, output_dir = ".") {
 
   message(sprintf("Erfolgreich exportiert nach '%s':\n 1) %s\n 2) %s", output_dir, basename(file_assign), basename(file_summary)))
 }
+
+#' Kurs-Kapazitaeten aktualisieren
+#'
+#' Hilfsfunktion zur Validierung und Aktualisierung von Kurs-Kapazitaeten.
+#' Wird primaer im Shiny-Kontext fuer editierbare Tabellen genutzt.
+#'
+#' @param courses data.frame mit Kursdaten.
+#' @param row_idx Zeilenindex.
+#' @param col_name Spaltenname ("min_capacity" oder "max_capacity").
+#' @param value Neuer Wert (muss positiver Integer sein).
+#' @return Aktualisierter data.frame.
+#' @export
+update_course_capacity <- function(courses, row_idx, col_name, value) {
+  if (is.null(courses)) stop("Kurs-Daten fehlen.")
+  if (row_idx < 1 || row_idx > nrow(courses)) stop("Ungueltiger Zeilenindex.")
+  if (!col_name %in% c("min_capacity", "max_capacity")) stop("Ungueltiger Spaltenname.")
+
+  val <- as.integer(value)
+  if (is.na(val) || val < 0) stop("Wert muss eine positive Ganzzahl sein.")
+
+  courses[row_idx, col_name] <- val
+  return(courses)
+}

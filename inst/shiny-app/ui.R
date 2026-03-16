@@ -53,7 +53,8 @@ ui <- page_sidebar(
     ),
     input_task_button("run_opt", "Optimierung starten", icon = icon("rocket")),
     br(),
-    downloadButton("export_results", "Ergebnisse exportieren", class = "btn-secondary w-100")
+    downloadButton("export_results", "CSV Daten (ZIP)", class = "btn-secondary w-100 mb-2"),
+    downloadButton("export_pdf", "Bericht (PDF)", class = "btn-info w-100", icon = icon("file-pdf"))
   ),
 
   # 1. Row: Status & Metriken (Kompakt am oberen Rand)
@@ -106,8 +107,20 @@ ui <- page_sidebar(
     nav_panel(
       "Kurs-Details",
       card(
-        card_header("Status aller Kurse"),
+        card_header("Status aller Kurse (Ergebnisse)"),
         DTOutput("table_courses")
+      )
+    ),
+    nav_panel(
+      "Konfiguration",
+      card(
+        card_header("Kurs-Kapazitäten anpassen (Input)"),
+        DTOutput("table_courses_config"),
+        actionButton(
+          "btn_save_courses", "Änderungen permanent in CSV speichern", 
+          icon = icon("save"), class = "btn-success mt-2 w-100"
+        ),
+        helpText("Änderungen in der Tabelle oben werden sofort für die nächste Optimierung übernommen. Nutze den Button, um sie dauerhaft in der Datei zu sichern.")
       )
     ),
     nav_panel(

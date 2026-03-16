@@ -99,6 +99,48 @@ evaluate_dashboard <- function(res, students, courses) {
   course_stats$participants[is.na(course_stats$participants)] <- 0
   course_stats$total_interest[is.na(course_stats$total_interest)] <- 0
 
+  # --- ENHANCEMENT: WHY WERE THEY NOT ASSIGNED? ---
+  if (nrow(rest_students) > 0) {
+    rest_students$reasons <- vapply(seq_len(nrow(rest_students)), function(i) {
+      wishes <- c(rest_students$first_choice[i], rest_students$second_choice[i], rest_students$third_choice[i])
+      st_reasons <- vapply(wishes, function(cid) {
+        if (is.na(cid) || cid == "") return("-")
+        st <- course_stats[course_stats$course_id == cid, ]
+        if (nrow(st) == 0) return("ID nicht gefunden")
+        if (st$participants[1] == 0) return("Entf\u00e4llt (< Min)")
+        if (st$participants[1] >= st$max_capacity[1]) return("Voll (Max)")
+        return("Planungskonflikt")
+      }, character(1))
+      paste(st_reasons, collapse = " | ")
+    }, character(1))
+    
+    # Detaillierte Spalten fuer die UI
+    rest_students$reason_1 <- vapply(rest_students$first_choice, function(cid) {
+       if (is.na(cid) || cid == "") return("-")
+       st <- course_stats[course_stats$course_id == cid, ]
+       if (nrow(st) == 0) return("ID nicht gefunden")
+       if (st$participants[1] == 0) return("Entf\u00e4llt")
+       if (st$participants[1] >= st$max_capacity[1]) return("Voll")
+       "Konflikt"
+    }, character(1))
+    rest_students$reason_2 <- vapply(rest_students$second_choice, function(cid) {
+       if (is.na(cid) || cid == "") return("-")
+       st <- course_stats[course_stats$course_id == cid, ]
+       if (nrow(st) == 0) return("ID nicht gefunden")
+       if (st$participants[1] == 0) return("Entf\u00e4llt")
+       if (st$participants[1] >= st$max_capacity[1]) return("Voll")
+       "Konflikt"
+    }, character(1))
+    rest_students$reason_3 <- vapply(rest_students$third_choice, function(cid) {
+       if (is.na(cid) || cid == "") return("-")
+       st <- course_stats[course_stats$course_id == cid, ]
+       if (nrow(st) == 0) return("ID nicht gefunden")
+       if (st$participants[1] == 0) return("Entf\u00e4llt")
+       if (st$participants[1] >= st$max_capacity[1]) return("Voll")
+       "Konflikt"
+    }, character(1))
+  }
+
   # Volle Kurse
   full_courses <- course_stats[course_stats$participants >= course_stats$max_capacity, ]
   cat(sprintf("Ausgebuchte Kurse: %d\n", nrow(full_courses)))

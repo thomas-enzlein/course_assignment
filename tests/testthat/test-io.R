@@ -66,3 +66,26 @@ test_that("import_data handles validation errors", {
   write.csv(data.frame(course_id = c("A", "A"), min_capacity = 1, max_capacity = 2), c_bad, row.names = FALSE)
   expect_error(import_data(s_ok, c_bad), "Die 'course_id' muss absolut eindeutig sein")
 })
+
+test_that("update_course_capacity validates and updates correctly", {
+  c_data <- data.frame(
+    course_id = c("A", "B"), 
+    min_capacity = c(2, 2), 
+    max_capacity = c(5, 5), 
+    stringsAsFactors = FALSE
+  )
+  
+  # Valid update
+  res <- update_course_capacity(c_data, 1, "min_capacity", 10)
+  expect_equal(res$min_capacity[1], 10)
+  
+  # Invalid row
+  expect_error(update_course_capacity(c_data, 3, "min_capacity", 10), "Zeilenindex")
+  
+  # Invalid column
+  expect_error(update_course_capacity(c_data, 1, "course_id", 10), "Spaltenname")
+  
+  # Invalid value
+  expect_error(update_course_capacity(c_data, 1, "min_capacity", -1), "Ganzzahl")
+  expect_error(update_course_capacity(c_data, 1, "min_capacity", "abc"), "Ganzzahl")
+})

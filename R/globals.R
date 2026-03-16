@@ -7,4 +7,7 @@ utils::globalVariables(c("j", "x", "y", "active", "MIPModel", "add_variable", "s
 #' @import plotly
 #' @import shinyFiles
 #' @import shinyjs
+#' @import rmarkdown
+#' @import pandoc
+#' @import knitr
 NULL
