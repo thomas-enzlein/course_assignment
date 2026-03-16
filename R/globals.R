@@ -9,5 +9,8 @@ utils::globalVariables(c("j", "x", "y", "active", "MIPModel", "add_variable", "s
 #' @import shinyjs
 #' @import rmarkdown
 #' @import pandoc
-#' @import knitr
+if (FALSE) {
+  library(testthat)
+  library(rcmdcheck)
+}
 NULL
