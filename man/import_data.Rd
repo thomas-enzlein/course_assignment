@@ -16,4 +16,5 @@ Eine Liste mit zwei Elementen: \code{students} und \code{courses} als data.frame
 }
 \description{
 Liest Schueler- und Kursdaten aus CSV-Dateien ein und validiert die Struktur rigoros.
+Falls kein \code{tie_breaker} vorhanden ist, wird dieser automatisch generiert.
 }

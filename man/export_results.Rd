@@ -9,12 +9,12 @@ export_results(result, courses, students, output_dir = ".")
 \arguments{
 \item{result}{Das Ergebnis-Objekt von \code{optimize_courses}.}
 
-\item{courses}{Der Kurs data.frame (fuer schoenere Namen im Export).}
+\item{courses}{Der Kurs data.frame (fuer Namen im Export).}
 
-\item{students}{Der Schueler data.frame (fuer die Ermittlung der Wahl-Nummer).}
+\item{students}{Der Schueler data.frame (fuer die Ermittlung der Wahl-Prioritaet).}
 
-\item{output_dir}{Der Ordner, in den die Dateien gespeichert werden sollen (Standard: aktuelles Verzeichnis).}
+\item{output_dir}{Das Zielverzeichnis (Standard: ".").}
 }
 \description{
-Speichert die berechneten Zuweisungen und eine Kurs-Zusammenfassung als gut lesbare CSV-Dateien ab.
+Speichert die berechneten Zuweisungen und eine Kurs-Zusammenfassung als CSV-Dateien.
 }

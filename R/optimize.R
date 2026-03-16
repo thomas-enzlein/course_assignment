@@ -6,6 +6,9 @@ get_score <- function(score_matrix, i, j) {
 
 #' Kurswahl optimieren
 #'
+#' Berechnet die optimale Zuweisung basierend auf Schueler-Wünschen und Kurs-Kapazitäten.
+#' Schützt automatisch vor Mehrfachwahlen desselben Kurses durch einen Schueler.
+#'
 #' @param students data.frame mit Schueler-Praeferenzen
 #' @param courses data.frame mit Kurs-Kapazitaeten
 #' @param enforce_survival Logisch, ob Kurse bevorzugt gerettet werden sollen. Standard ist FALSE.

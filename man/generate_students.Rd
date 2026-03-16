@@ -2,19 +2,20 @@
 % Please edit documentation in R/data_generator.R
 \name{generate_students}
 \alias{generate_students}
-\title{Schueler mit Praeferenzen generieren}
+\title{Schueler mit realistischen Profilen generieren}
 \usage{
 generate_students(n = 300, courses)
 }
 \arguments{
 \item{n}{Anzahl der Schueler (Standard: 300)}
 
-\item{courses}{Ein data.frame mit Kursen und Gewichten (weight_m, weight_w)}
+\item{courses}{data.frame mit Kursdaten}
 }
 \value{
-Ein data.frame mit Schuelerpraeferenzen und Tie-Breaker
+Ein data.frame mit Schuelerpraeferenzen und tie_breaker Spalte.
 }
 \description{
-Generiert Schuelerdaten inkl. Geschlecht (m/w), 1., 2. und 3. Wahl
-sowie einen Tie-Breaker.
+Erzeugt Schueler mit zufaelligen Namen, Geschlechtern und einem von fünf
+Archetypen (Allrounder, Sportler, MINT, Kreativ, Sozial). Die Kurswahlen
+erfolgen gewichtet basierend auf dem Profil und globalen Hype-Faktoren.
 }

@@ -1,12 +1,10 @@
 test_that("generate_courses works correctly", {
-  courses <- generate_courses(min_cap = 5, max_cap = 25)
+  courses <- generate_courses(min_cap_range = c(5, 10))
 
   expect_s3_class(courses, "data.frame")
-  expect_equal(nrow(courses), 50)
-  expect_equal(courses$min_capacity[1], 5)
-  expect_equal(courses$max_capacity[1], 25)
-  expect_true(all(courses$weight_m > 0))
-  expect_true(all(courses$weight_w > 0))
+  expect_equal(nrow(courses), 40)
+  expect_true(all(courses$min_capacity >= 5 & courses$min_capacity <= 10))
+  expect_true(all(courses$max_capacity >= 7))
 })
 
 test_that("generate_students works correctly", {
@@ -27,10 +25,12 @@ test_that("generate_students works correctly", {
   # Check tie-breaker range
   expect_true(all(students$tie_breaker >= 0.001 & students$tie_breaker <= 0.099))
 })
+
 test_that("generate_students throws errors on invalid input", {
   courses_empty <- data.frame()
   expect_error(generate_students(10, courses_empty), "Es muessen mindestens 3 Kurse")
   
-  courses_bad <- data.frame(course_id = c("A", "B", "C"), x = 1, y = 2)
+  # Bad data frame missing columns
+  courses_bad <- data.frame(id = c("A", "B", "C"))
   expect_error(generate_students(10, courses_bad))
 })

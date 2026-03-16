@@ -24,5 +24,6 @@ optimize_courses(
 Ein Listen-Objekt mit den Zuweisungen und Status
 }
 \description{
-Kurswahl optimieren
+Berechnet die optimale Zuweisung basierend auf Schueler-Wünschen und Kurs-Kapazitäten.
+Schützt automatisch vor Mehrfachwahlen desselben Kurses durch einen Schueler.
 }

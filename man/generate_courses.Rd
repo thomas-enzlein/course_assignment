@@ -4,17 +4,16 @@
 \alias{generate_courses}
 \title{Kurse generieren}
 \usage{
-generate_courses(min_cap = 4, max_cap = 30)
+generate_courses(min_cap_range = c(4, 8))
 }
 \arguments{
-\item{min_cap}{Mindestteilnehmerzahl (Standard: 4)}
-
-\item{max_cap}{Maximalteilnehmerzahl (Standard: 30)}
+\item{min_cap_range}{Vektor mit min/max fuer die Mindestteilnehmerzahl (Standard: 4-8)}
 }
 \value{
-Ein data.frame mit Kursdaten und Gewichten
+Ein data.frame mit Kursdaten (course_id, course_name, category, min_capacity, max_capacity)
 }
 \description{
-Erstellt eine Dummy-Tabelle fuer Kurse mit festen Namen und geschlechtsspezifischen
-Beliebtheits-Gewichten basierend auf einer Normalverteilung.
+Erstellt eine Dummy-Tabelle fuer 40 Kurse mit Kategorien.
+Implementiert Stress-Test 3.1 mit Kapazitäten zwischen 8 und 15.
+Spezielle "Hype-Kurse" werden mit knappen Kapazitäten (7) versehen.
 }

@@ -2,3 +2,5 @@
 ^renv\.lock$
 ^Beispieldaten$
 ^Ergebnisse$
+^\.github$
+^inst/shiny-app/\.shiny_config\.json$

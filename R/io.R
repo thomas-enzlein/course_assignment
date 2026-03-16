@@ -1,6 +1,7 @@
 #' Daten importieren und validieren
 #'
 #' Liest Schueler- und Kursdaten aus CSV-Dateien ein und validiert die Struktur rigoros.
+#' Falls kein `tie_breaker` vorhanden ist, wird dieser automatisch generiert.
 #'
 #' @param students_file Pfad zur CSV-Datei mit Schuelerdaten.
 #' @param courses_file Pfad zur CSV-Datei mit Kursdaten.
@@ -69,12 +70,12 @@ import_data <- function(students_file, courses_file) {
 
 #' Ergebnisse exportieren
 #'
-#' Speichert die berechneten Zuweisungen und eine Kurs-Zusammenfassung als gut lesbare CSV-Dateien ab.
+#' Speichert die berechneten Zuweisungen und eine Kurs-Zusammenfassung als CSV-Dateien.
 #'
 #' @param result Das Ergebnis-Objekt von `optimize_courses`.
-#' @param courses Der Kurs data.frame (fuer schoenere Namen im Export).
-#' @param students Der Schueler data.frame (fuer die Ermittlung der Wahl-Nummer).
-#' @param output_dir Der Ordner, in den die Dateien gespeichert werden sollen (Standard: aktuelles Verzeichnis).
+#' @param courses Der Kurs data.frame (fuer Namen im Export).
+#' @param students Der Schueler data.frame (fuer die Ermittlung der Wahl-Prioritaet).
+#' @param output_dir Das Zielverzeichnis (Standard: ".").
 #' @export
 export_results <- function(result, courses, students, output_dir = ".") {
   if (nrow(result$assignments) == 0) {

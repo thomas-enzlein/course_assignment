@@ -1,10 +1,16 @@
 #' Optimierungs-Ergebnisse auswerten
 #'
 #' Zeigt eine Zusammenfassung der Schuelerzufriedenheit und des Kursstatus im Terminal an.
+#' Berechnet zudem detaillierte Statistiken fuer die Darstellung im Dashboard.
 #'
 #' @param res Das Ergebnis-Objekt der Funktion optimize_courses()
 #' @param students Der data.frame der Schueler
 #' @param courses Der data.frame der Kurse
+#' @return Eine unsichtbare Liste mit:
+#'   \item{choice_1, choice_2, choice_3}{Anzahl der Schueler mit jeweiliger Wahl}
+#'   \item{unassigned}{Anzahl der nicht zugewiesenen Schueler}
+#'   \item{course_stats}{data.frame mit Teilnehmerzahlen und Gesamtnachfrage pro Kurs}
+#'   \item{rest_students}{data.frame der nicht zugewiesenen Schueler}
 #' @export
 #' @importFrom utils head
 evaluate_dashboard <- function(res, students, courses) {

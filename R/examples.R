@@ -8,9 +8,9 @@
 #' @export
 #' @examples
 #' \dontrun{
-#' student_file <- example_data_path("students")
-#' course_file <- example_data_path("courses")
-#' imported <- import_data(student_file, course_file)
+#' # 1. Daten generieren (Stress-Szenario 3.1)
+#' courses <- generate_courses()
+#' students <- generate_students(300, courses = courses)
 #' }
 example_data_path <- function(type = c("students", "courses")) {
   type <- match.arg(type)
