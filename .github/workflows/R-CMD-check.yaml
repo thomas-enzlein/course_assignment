@@ -42,6 +42,11 @@ jobs:
 
       - uses: r-lib/actions/setup-renv@v2
 
+      - name: Install rcmdcheck
+        run: |
+          if (!requireNamespace("rcmdcheck", quietly = TRUE)) install.packages("rcmdcheck")
+        shell: Rscript {0}
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
