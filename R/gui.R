@@ -8,6 +8,13 @@
 #' @param launch.browser Logisch, ob die App im Browser geöffnet werden soll (Standard: TRUE).
 #' @export
 #' @importFrom shiny runApp
+#' @importFrom shinyjs useShinyjs
+#' @importFrom shinyFiles shinyFilesButton
+#' @importFrom bslib bs_theme
+#' @importFrom DT datatable
+#' @importFrom rmarkdown render
+#' @importFrom knitr knit
+#' @importFrom jsonlite fromJSON
 launch_gui <- function(port = getOption("shiny.port"), launch.browser = getOption("shiny.launch.browser", interactive())) {
   app_dir <- system.file("shiny-app", package = "kurszuweisung")
 

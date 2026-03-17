@@ -150,4 +150,4 @@ optimize_courses <- function(students, courses, enforce_survival = FALSE,
 }
 
 # Globale Variablen fuer ompr (um R CMD check zu beruhigen)
-if (getRversion() >= "2.15.1") utils::globalVariables(c("x", "y", "i", "j"))
+if (getRversion() >= "2.15.1") utils::globalVariables(c("x", "y", "i", "j", "z_gender", "z_class", "k"))

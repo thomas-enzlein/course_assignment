@@ -1,4 +1,6 @@
 #' Safe NULL coalescing operator
+#' @name nil_coalescing
+#' @rdname nil_coalescing
 #' @param a The value to check
 #' @param b The value to return if a is NULL
 #' @return a if not NULL, else b
