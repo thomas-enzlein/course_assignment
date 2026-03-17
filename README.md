@@ -7,8 +7,8 @@ Gleichzeitig werden harte Restriktionen wie Raumkapazitäten (Maximalgrenzen) un
 ## Features
 * **100% faires globales Optimum:** Kein "Wer zuerst kommt, mahlt zuerst" – das System findet die mathematisch beste Kombination aller Schüler gleichzeitig.
 * **Strikes Kapazitätsmanagement:** Kurse haben harte Ober- und Untergrenzen.
-* **Geschlechter-Balance & Diversität (NEU):** Optionale Constraints sorgen für eine faire Verteilung von Jungen und Mädchen sowie eine Durchmischung von Klassen.
-* **Modernes Dashboard (NEU):** Interaktive Visualisierungen der Zufriedenheit und Kursauslastung (inkl. m/w Ratio und demografischen Splits).
+* **Geschlechter-Balance & Diversität:** Optionale Constraints sorgen für eine faire Verteilung von Jungen und Mädchen sowie eine Durchmischung von Klassen.
+* **Modernes Dashboard:** Interaktive Visualisierungen der Zufriedenheit und Kursauslastung (inkl. m/w Ratio und demografischen Splits).
 * **Lebenserhaltungs-Flag:** Der Solver kann Kurse vor dem Ausfall retten, indem er Wünsche geschickt verteilt.
 * **Excel-Unterstützung:** Direkter Import von und Export nach Excel (`.xlsx`).
 
@@ -16,7 +16,7 @@ Gleichzeitig werden harte Restriktionen wie Raumkapazitäten (Maximalgrenzen) un
 
 ## 1. Benötigte Datenstrukturen (Input)
 
-Das Paket erwartet eine Excel-Datei mit zwei Reitern: **"Schüler"** und **"Kurse"**. Alternativ können CSV-Dateien genutzt werden.
+Das Paket erwartet eine Excel-Datei mit zwei Reitern: **"Schüler"** und **"Kurse"**.
 
 ### Datei 1: Kursdaten (`Kurse`)
 | Spaltenname | Beschreibung | Pflicht? |
@@ -70,4 +70,4 @@ export_results(ergebnis, daten$courses, daten$students, "Ergebnisse")
 ```
 
 ## Fehlerbehebung & Performance
-Der Solver (GLPK) garantiert bei genügend Zeit das globale Optimum. Bei sehr großen Problemen (über 500 Schüler) kann der Status `Time Limit` auftreten. Dies bedeutet, dass eine exzellente, zulässige Lösung gefunden wurde, aber der mathematische Beweis für das absolute Optimum noch aussteht. Diese Ergebnisse sind in der Praxis fast immer sofort verwendbar.
+Der Solver (GLPK) garantiert bei genügend Zeit das globale Optimum. Bei sehr großen Problemen (über 500 Schüler) kann der Status `Time Limit` auftreten. Dies bedeutet, dass eine zulässige Lösung gefunden wurde, aber der mathematische Beweis für das absolute Optimum noch aussteht. Diese Ergebnisse sind in der Praxis fast immer sofort verwendbar.
