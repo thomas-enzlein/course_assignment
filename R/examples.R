@@ -1,24 +1,22 @@
-#' Beispieldaten-Pfade abrufen
+#' Beispieldaten-Pfad abrufen
 #'
-#' Diese Funktion liefert die absoluten Pfade zu den mitgelieferten Beispieldaten
-#' (Schueler und Kurse) des Pakets. Dies ist nuetzlich, um die Funktionen ohne eigene Daten auszuprobieren.
+#' Diese Funktion liefert den absoluten Pfad zur mitgelieferten Beispieldaten-Datei
+#' (.xlsx) des Pakets. Diese Datei enthält bereits die Reiter "Schüler" und "Kurse".
 #'
-#' @param type Charakter. Entweder \code{"students"} oder \code{"courses"}.
-#' @return Einen Dateipfad (Character).
+#' @return Einen Dateipfad (Character) zur Excel-Vorlage.
 #' @export
-#' @examples
-#' \dontrun{
-#' # 1. Daten generieren (Stress-Szenario 3.1)
-#' courses <- generate_courses()
-#' students <- generate_students(300, courses = courses)
-#' }
-example_data_path <- function(type = c("students", "courses")) {
-  type <- match.arg(type)
-  file_name <- switch(type,
-    students = "schueler.csv",
-    courses = "kurse.csv")
-
+example_data_path <- function() {
   # system.file sucht im inst/extdata Ordner des installierten Paketes
-  path <- system.file("extdata", file_name, package = "kurszuweisung", mustWork = TRUE)
+  path <- system.file("extdata", "kurszuweisung_vorlage.xlsx", package = "kurszuweisung")
+  
+  # Fallback fuer Entwicklungsumgebung
+  if (path == "" || !file.exists(path)) {
+    path <- "inst/extdata/kurszuweisung_vorlage.xlsx"
+  }
+  
+  if (!file.exists(path)) {
+    stop("Beispieldaten-Datei 'kurszuweisung_vorlage.xlsx' konnte nicht gefunden werden.")
+  }
+  
   return(path)
 }

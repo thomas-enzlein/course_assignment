@@ -14,6 +14,13 @@ library(shinyFiles) # Added shinyFiles library
 source("persistence.R")
 
 server <- function(input, output, session) {
+  
+  # --- Centralized Evaluation Reactive ---
+  # This avoids calling evaluate_dashboard 5+ times for every change
+  eval_res <- reactive({
+    req(rv$result, rv$students, rv$courses)
+    kurszuweisung::evaluate_dashboard(rv$result, rv$students, rv$courses)
+  })
   # --- Persistence: Load initial config ---
   config <- load_config()
 
@@ -33,15 +40,13 @@ server <- function(input, output, session) {
     students = NULL,
     courses = NULL,
     result = NULL,
-    optimize_status = NULL, # Added optimize_status
-    students_path = config$students_path,
-    courses_path = config$courses_path
+    optimize_status = NULL,
+    data_path = config$data_path
   )
 
   # --- shinyFiles Setup ---
   roots <- c(Home = normalizePath("~"), Root = "C:/", Current = getwd())
-  shinyFiles::shinyFileChoose(input, "file_students", roots = roots, filetypes = c("csv"))
-  shinyFiles::shinyFileChoose(input, "file_courses", roots = roots, filetypes = c("csv"))
+  shinyFiles::shinyFileChoose(input, "file_total", roots = roots, filetypes = c("xlsx"))
 
   # Helper to convert shinyFiles volume/path to absolute path
   parse_path <- function(file_input) {
@@ -50,69 +55,52 @@ server <- function(input, output, session) {
   }
 
   # Loading function
-  load_data <- function(path, type) {
-    if (is.null(path) || !file.exists(path)) return(NULL)
+  load_all_data <- function(path) {
+    if (is.null(path) || !file.exists(path)) return()
     tryCatch(
       {
-        read.csv(path, stringsAsFactors = FALSE)
+        data <- kurszuweisung::import_data(path)
+        rv$students <- data$students
+        rv$courses <- data$courses
+        showNotification("Excel-Daten erfolgreich geladen.", type = "message")
       },
       error = function(e) {
-        showNotification(paste("Fehler beim Laden von", type, ":", e$message), type = "error")
-        NULL
+        showNotification(paste("Fehler beim Laden der Excel-Datei:", e$message), type = "error")
+        rv$students <- NULL
+        rv$courses <- NULL
       }
     )
   }
 
   # --- Observers for File Selection ---
-  observeEvent(input$file_students, {
-    path <- parse_path(input$file_students)
+  observeEvent(input$file_total, {
+    path <- parse_path(input$file_total)
     if (!is.null(path)) {
-      rv$students_path <- path
-      rv$students <- load_data(path, "Schüler")
-    }
-  })
-
-  observeEvent(input$file_courses, {
-    path <- parse_path(input$file_courses)
-    if (!is.null(path)) {
-      rv$courses_path <- path
-      rv$courses <- load_data(path, "Kurse")
+      rv$data_path <- path
+      load_all_data(path)
     }
   })
 
   # --- Reload Logic ---
   observeEvent(input$btn_reload, {
-    if (!is.null(rv$students_path)) rv$students <- load_data(rv$students_path, "Schüler")
-    if (!is.null(rv$courses_path)) rv$courses <- load_data(rv$courses_path, "Kurse")
-    if (!is.null(rv$students) || !is.null(rv$courses)) {
-      showNotification("Daten erfolgreich neu eingelesen.", type = "message")
+    if (!is.null(rv$data_path)) {
+      load_all_data(rv$data_path)
     }
   })
 
   # --- Initial Load ---
   observe({
-    if (!is.null(rv$students_path) && is.null(rv$students)) {
-      rv$students <- load_data(rv$students_path, "Schüler")
-    }
-    if (!is.null(rv$courses_path) && is.null(rv$courses)) {
-      rv$courses <- load_data(rv$courses_path, "Kurse")
+    if (!is.null(rv$data_path) && is.null(rv$students)) {
+      load_all_data(rv$data_path)
     }
   })
 
   # --- Status Outputs for Files ---
-  output$status_students <- renderUI({
-    if (!is.null(rv$students)) {
-      span(icon("check-circle"), " Daten geladen", style = "color: #27ae60; font-size: 0.8rem;")
+  output$status_total <- renderUI({
+    if (!is.null(rv$students) && !is.null(rv$courses)) {
+      span(icon("check-circle"), " Gesamt-Excel geladen (Schüler + Kurse)", style = "color: #27ae60; font-size: 0.8rem;")
     } else {
-      span(icon("exclamation-triangle"), " Bitte Datei wählen", style = "color: #e67e22; font-size: 0.8rem;")
-    }
-  })
-
-  output$status_courses <- renderUI({
-    if (!is.null(rv$courses)) {
-      span(icon("check-circle"), " Daten geladen", style = "color: #27ae60; font-size: 0.8rem;")
-    } else {
-      span(icon("exclamation-triangle"), " Bitte Datei wählen", style = "color: #e67e22; font-size: 0.8rem;")
+      span(icon("exclamation-triangle"), " Bitte Excel-Datei wählen", style = "color: #e67e22; font-size: 0.8rem;")
     }
   })
 
@@ -121,15 +109,24 @@ server <- function(input, output, session) {
     req(config)
     updateSliderInput(session, "time_limit", value = config$time_limit)
     updateCheckboxInput(session, "enforce_survival", value = config$enforce_survival)
+    
+    # New balancing parameters (with defaults for old configs)
+    if (!is.null(config$use_balance_gender)) updateCheckboxInput(session, "use_balance_gender", value = config$use_balance_gender)
+    if (!is.null(config$use_balance_class)) updateCheckboxInput(session, "use_balance_class", value = config$use_balance_class)
+    if (!is.null(config$weight_gender)) updateSliderInput(session, "weight_gender", value = config$weight_gender)
+    if (!is.null(config$weight_class)) updateSliderInput(session, "weight_class", value = config$weight_class)
   })
 
   # --- Auto-Save Config ---
   observe({
     save_config(
-      rv$students_path,
-      rv$courses_path,
+      rv$data_path,
       input$time_limit,
-      input$enforce_survival
+      input$enforce_survival,
+      input$use_balance_gender,
+      input$use_balance_class,
+      input$weight_gender,
+      input$weight_class
     )
   })
 
@@ -145,6 +142,11 @@ server <- function(input, output, session) {
 
   # --- Run Optimization ---
   observeEvent(input$run_opt, {
+    req(rv$data_path)
+
+    # Automatischer Reload vor dem Start, um sicherzugehen dass wir die neuesten Daten haben
+    load_all_data(rv$data_path)
+    
     req(rv$students, rv$courses)
 
     withProgress(message = "Optimierung läuft...", value = 0.5, {
@@ -154,6 +156,8 @@ server <- function(input, output, session) {
             students = rv$students,
             courses = rv$courses,
             enforce_survival = input$enforce_survival,
+            balance_gender = if (isTRUE(input$use_balance_gender)) input$weight_gender else 0,
+            balance_class = if (isTRUE(input$use_balance_class)) input$weight_class else 0,
             time_limit_sec = input$time_limit
           )
         },
@@ -167,10 +171,9 @@ server <- function(input, output, session) {
 
       # Save config on successful run
       save_config(
-        students_path = rv$students_path,
-        courses_path = rv$courses_path,
-        time_limit = input$time_limit,
-        enforce_survival = input$enforce_survival
+        rv$data_path,
+        input$time_limit,
+        input$enforce_survival
       )
     })
 
@@ -212,65 +215,14 @@ server <- function(input, output, session) {
     sprintf("%.2f", rv$result$objective_value)
   })
 
-  # --- Outputs: Plots ---
   output$plot_satisfaction <- renderPlotly({
-    req(rv$result, rv$students, rv$courses)
-    eval_res <- kurszuweisung::evaluate_dashboard(rv$result, rv$students, rv$courses)
-
-    df_plot <- data.frame(
-      Category = c("1. Wahl", "2. Wahl", "3. Wahl", "Nicht zugewiesen"),
-      Count = c(eval_res$choice_1, eval_res$choice_2, eval_res$choice_3, eval_res$unassigned)
-    )
-
-    plot_ly(df_plot,
-      labels = ~Category, values = ~Count, type = "pie",
-      marker = list(colors = c("#27ae60", "#f1c40f", "#e67e22", "#c0392b"))
-    ) |>
-      layout(title = list(text = "Verteilung der Wünsche"))
+    m_total <- sum(rv$students$gender == "m", na.rm = TRUE)
+    w_total <- sum(rv$students$gender == "w", na.rm = TRUE)
+    kurszuweisung::plot_satisfaction_demographics(eval_res(), m_total, w_total)
   })
 
   output$plot_course_usage <- renderPlotly({
-    req(rv$result, rv$students, rv$courses)
-    eval_res <- kurszuweisung::evaluate_dashboard(
-      rv$result, rv$students, rv$courses
-    )
-    stats <- eval_res$course_stats
-    stats$free_capacity <- stats$max_capacity - stats$participants
-
-    plot_ly(stats,
-      x = ~course_id, y = ~participants, type = "bar", name = "Belegt",
-      marker = list(color = "#f39c12"), # Orange
-      text = ~ paste0(
-        "Kurs: ", course_name, 
-        "<br>Teilnehmer: ", participants, "/", max_capacity,
-        "<br>Interessenten gesamt: ", total_interest,
-        "<br>Status: ", ifelse(participants == 0, "Ausgefallen", "Aktiv")
-      ),
-      hoverinfo = "text",
-      textposition = "none"
-    ) |>
-      add_trace(
-        y = ~free_capacity, name = "Frei",
-        marker = list(color = "#bdc3c7"), # Gray
-        text = ~ paste0(
-          "Kurs: ", course_name, 
-          "<br>Frei: ", free_capacity,
-          "<br>Mindestgröße: ", min_capacity,
-          "<br>Interessenten: ", total_interest,
-          ifelse(participants == 0, 
-            paste0("<br>Grund für 0: ", ifelse(total_interest == 0, "Keine Wünsche", "Min-Cap nicht erreicht")),
-            ""
-          )
-        ),
-        hoverinfo = "text",
-        textposition = "none"
-      ) |>
-      layout(
-        title = list(text = "Kursauslastung & Nachfrage"),
-        barmode = "stack",
-        xaxis = list(title = "Kurs ID"), yaxis = list(title = "Anzahl"),
-        showlegend = TRUE
-      )
+    kurszuweisung::plot_course_occupancy(eval_res())
   })
 
   # --- Outputs: Tables ---
@@ -278,47 +230,52 @@ server <- function(input, output, session) {
     req(rv$result, rv$students, rv$courses)
     assignments <- rv$result$assignments
 
-    # Merge student info (including choices)
-    df <- merge(
-      assignments, rv$students,
-      by = "student_id"
-    )
+    # Merge student info
+    df <- merge(assignments, rv$students, by = "student_id", all.x = TRUE)
 
     # Helper for human names
     get_name <- function(id) {
+      if (is.na(id) || id == "") return("-")
       name <- rv$courses$course_name[rv$courses$course_id == id]
       if (length(name) == 1) paste0(name, " (", id, ")") else id
     }
 
-    # Choice calculation & mapping
-    df$Wunsch <- vapply(seq_len(nrow(df)), function(i) {
-      actual <- df$course_id[i]
-      if (actual == df$first_choice[i]) "1. Wunsch"
-      else if (actual == df$second_choice[i]) "2. Wunsch"
-      else if (actual == df$third_choice[i]) "3. Wunsch"
-      else "Kein Wunsch (Auffüll-Zuweisung)"
-    }, character(1))
+    # Choice calculation
+    df$Status <- ifelse(df$course_id == df$first_choice, "1. Wahl",
+                  ifelse(df$course_id == df$second_choice, "2. Wahl",
+                    ifelse(df$course_id == df$third_choice, "3. Wahl", "Sonderzuweisung")))
 
     df$Zuweisung <- vapply(df$course_id, get_name, character(1))
     df$W1 <- vapply(df$first_choice, get_name, character(1))
     df$W2 <- vapply(df$second_choice, get_name, character(1))
     df$W3 <- vapply(df$third_choice, get_name, character(1))
 
-    # Select columns
-    display_df <- df[, c("student_id", "student_name", "Wunsch", "Zuweisung", "W1", "W2", "W3")]
-    colnames(display_df) <- c("Schüler-ID", "Name", "Status", "Erhalten", "1. Wunsch", "2. Wunsch", "3. Wunsch")
+    # Select columns dynamically
+    cols <- c("student_id", "student_name", "gender")
+    if ("class" %in% names(df)) cols <- c(cols, "class")
+    else if ("Klasse" %in% names(df)) cols <- c(cols, "Klasse")
+    
+    cols <- c(cols, "Status", "Zuweisung", "W1", "W2", "W3")
+    display_df <- df[, cols]
+    
+    # Rename for UI
+    col_names <- c("ID", "Name", "Geschl.", "Klasse", "Status", "Kurs", "1. Wunsch", "2. Wunsch", "3. Wunsch")
+    colnames(display_df) <- col_names[c(TRUE, TRUE, TRUE, ("class" %in% names(df) || "Klasse" %in% names(df)), TRUE, TRUE, TRUE, TRUE, TRUE)]
 
     display_df |> datatable(options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
   })
 
   output$table_courses <- renderDT({
-    req(rv$result, rv$students, rv$courses)
-    eval_res <- kurszuweisung::evaluate_dashboard(
-      rv$result, rv$students, rv$courses
-    )
-    # Order: Name first, then ID
-    display_df <- eval_res$course_stats[, c("course_name", "course_id", "participants", "max_capacity", "min_capacity", "total_interest")]
-    colnames(display_df) <- c("Kursname", "Kurs-ID", "Teilnehmer", "Max.", "Min.", "Interesse (alle Wünsche)")
+    # Use reactive results
+    res <- eval_res()
+    display_df <- res$course_stats[, c("course_name", "course_id", "participants", "participants_m", "participants_w", "max_capacity", "min_capacity", "total_interest")]
+    
+    # Calculate raw ratio string
+    display_df$ratio <- paste0(display_df$participants_m, "m / ", display_df$participants_w, "w")
+    
+    # Final column selection for UI
+    display_df <- display_df[, c("course_name", "course_id", "participants", "ratio", "max_capacity", "min_capacity", "total_interest")]
+    colnames(display_df) <- c("Kursname", "Kurs-ID", "Teilnehmer (Gesamt)", "m/w Ratio", "Max.", "Min.", "Interesse")
 
     display_df |> datatable(rownames = FALSE)
   })
@@ -389,56 +346,112 @@ server <- function(input, output, session) {
     }
   })
 
-  # Permanent Speichern
+  # Permanent Speichern in Excel-Datei
   observeEvent(input$btn_save_courses, {
-    req(rv$courses, rv$courses_path)
+    req(rv$courses, rv$data_path, rv$students)
     tryCatch({
-      write.csv(rv$courses, rv$courses_path, row.names = FALSE)
-      showNotification("Änderungen permanent in der CSV gespeichert!", type = "message")
+      # Wir schreiben beide Reiter zurück, um die Datei konsistent zu halten
+      sheets <- list(
+        "Schüler" = rv$students,
+        "Kurse" = rv$courses
+      )
+      writexl::write_xlsx(sheets, path = rv$data_path)
+      showNotification("Änderungen permanent in der Excel-Datei gespeichert!", type = "message")
     }, error = function(e) {
       showNotification(paste("Speichern fehlgeschlagen:", e$message), type = "error")
     })
   })
 
   output$table_unassigned <- renderDT({
-    req(rv$result, rv$students, rv$courses)
-    eval_res <- kurszuweisung::evaluate_dashboard(
-      rv$result, rv$students, rv$courses
-    )
-    df <- eval_res$rest_students
-
-    # Helper function to map ID to "Name (ID)"
+    # Use reactive results
+    df <- eval_res()$rest_students
+    
+    # Helper for human names
     map_course <- function(id) {
-      if (is.na(id) || id == "") return(id)
-      name <- rv$courses$course_name[rv$courses$course_id == id]
-      if (length(name) == 1) paste0(name, " (", id, ")") else id
+       if (is.na(id) || id == "") return("-")
+       name <- rv$courses$course_name[rv$courses$course_id == id]
+       if (length(name) == 1) paste0(name, " (", id, ")") else id
     }
 
     df$c1 <- vapply(df$first_choice, map_course, character(1))
     df$c2 <- vapply(df$second_choice, map_course, character(1))
     df$c3 <- vapply(df$third_choice, map_course, character(1))
 
-    display_df <- df[, c("student_id", "student_name", "c1", "reason_1", "c2", "reason_2", "c3", "reason_3")]
-    colnames(display_df) <- c("ID", "Name", "1. Wunsch", "Grund 1", "2. Wunsch", "Grund 2", "3. Wunsch", "Grund 3")
+    # Basic columns
+    cols <- c("student_id")
+    if ("student_name" %in% names(df)) cols <- c(cols, "student_name")
+    if ("gender" %in% names(df)) cols <- c(cols, "gender")
+    if ("class" %in% names(df)) cols <- c(cols, "class")
+    else if ("Klasse" %in% names(df)) cols <- c(cols, "Klasse")
+    
+    # Satisfaction data
+    req_cols <- c("c1", "reason_1", "c2", "reason_2", "c3", "reason_3")
+    cols <- c(cols, intersect(req_cols, names(df)))
+
+    display_df <- df[, cols, drop = FALSE]
+    
+    # Clean names
+    header <- c("ID", "Name", "m/w", "Klasse", "1. Wunsch", "Grund 1", "2. Wunsch", "Grund 2", "3. Wunsch", "Grund 3")
+    colnames(display_df) <- header[1:ncol(display_df)]
 
     display_df |> datatable(rownames = FALSE, options = list(pageLength = 20, scrollX = TRUE))
   })
 
-  # --- Download Handler ---
-  output$export_results <- downloadHandler(
+  # --- Excel Export Handler ---
+  output$export_excel <- downloadHandler(
     filename = function() {
-      paste("kurszuweisung-data-", Sys.Date(), ".zip", sep = "")
+      paste("kurszuweisung-ergebnisse-", Sys.Date(), ".xlsx", sep = "")
     },
     content = function(file) {
-      temp_dir <- tempdir()
-      kurszuweisung::export_results(rv$result, rv$courses, rv$students, output_dir = temp_dir)
+      req(rv$result, rv$students, rv$courses)
+      
+      # 1. Zuweisungen aufbereiten (Logik analog zu export_results)
+      assignments <- rv$result$assignments
+      cols_students <- intersect(names(rv$students), c("student_id", "student_name", "class", "Klasse", "first_choice", "second_choice", "third_choice"))
+      assignments <- merge(assignments, rv$students[, cols_students], by = "student_id", all.x = TRUE)
+      
+      assignments$choice_num <- "Zufall/Reste"
+      assignments$choice_num[assignments$course_id == assignments$first_choice] <- "1. Wahl"
+      assignments$choice_num[assignments$course_id == assignments$second_choice] <- "2. Wahl"
+      assignments$choice_num[assignments$course_id == assignments$third_choice] <- "3. Wahl"
+      
+      if ("course_name" %in% names(rv$courses)) {
+        assignments <- merge(assignments, rv$courses[, c("course_id", "course_name")], by = "course_id", all.x = TRUE)
+      }
+      
+      final_assign_cols <- c("student_id")
+      if ("student_name" %in% names(assignments)) final_assign_cols <- c(final_assign_cols, "student_name")
+      if ("class" %in% names(assignments)) {
+        final_assign_cols <- c(final_assign_cols, "class")
+      } else if ("Klasse" %in% names(assignments)) {
+        final_assign_cols <- c(final_assign_cols, "Klasse")
+      }
+      final_assign_cols <- c(final_assign_cols, "course_id")
+      if ("course_name" %in% names(assignments)) final_assign_cols <- c(final_assign_cols, "course_name")
+      final_assign_cols <- c(final_assign_cols, "choice_num")
+      
+      assignments_df <- assignments[, final_assign_cols]
+      colnames(assignments_df) <- c("Schüler-ID", "Name", "Klasse", "Kurs-ID", "Kursname", "Wunsch")[1:ncol(assignments_df)]
+      
+      # 2. Kurs-Statistik aufbereiten
+      eval_res <- kurszuweisung::evaluate_dashboard(rv$result, rv$students, rv$courses)
+      stats_df <- eval_res$course_stats[, c("course_name", "course_id", "participants", "max_capacity", "min_capacity", "total_interest")]
+      colnames(stats_df) <- c("Kursname", "Kurs-ID", "Teilnehmer", "Max.", "Min.", "Interesse")
+      
+      # 3. In Excel schreiben
+      sheets <- list("Zuweisungen" = assignments_df, "Kurs-Statistik" = stats_df)
+      writexl::write_xlsx(sheets, path = file)
+    }
+  )
 
-      # Zipping the files
-      files_to_zip <- c(
-        file.path(temp_dir, "zuweisungen_schueler.csv"),
-        file.path(temp_dir, "kurs_zusammenfassung.csv")
-      )
-      zip(file, files_to_zip, extras = "-j")
+  # --- Template Export Handler ---
+  output$export_templates <- downloadHandler(
+    filename = function() {
+      paste("kurszuweisung-vorlage-", Sys.Date(), ".xlsx", sep = "")
+    },
+    content = function(file) {
+      # Direkt frische Demo-Daten in die Excel-Datei generieren
+      kurszuweisung::generate_demo_excel(file)
     }
   )
 

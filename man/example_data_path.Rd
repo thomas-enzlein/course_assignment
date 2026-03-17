@@ -2,24 +2,14 @@
 % Please edit documentation in R/examples.R
 \name{example_data_path}
 \alias{example_data_path}
-\title{Beispieldaten-Pfade abrufen}
+\title{Beispieldaten-Pfad abrufen}
 \usage{
-example_data_path(type = c("students", "courses"))
-}
-\arguments{
-\item{type}{Charakter. Entweder \code{"students"} oder \code{"courses"}.}
+example_data_path()
 }
 \value{
-Einen Dateipfad (Character).
+Einen Dateipfad (Character) zur Excel-Vorlage.
 }
 \description{
-Diese Funktion liefert die absoluten Pfade zu den mitgelieferten Beispieldaten
-(Schueler und Kurse) des Pakets. Dies ist nuetzlich, um die Funktionen ohne eigene Daten auszuprobieren.
-}
-\examples{
-\dontrun{
-# 1. Daten generieren (Stress-Szenario 3.1)
-courses <- generate_courses()
-students <- generate_students(300, courses = courses)
-}
+Diese Funktion liefert den absoluten Pfad zur mitgelieferten Beispieldaten-Datei
+(.xlsx) des Pakets. Diese Datei enthält bereits die Reiter "Schüler" und "Kurse".
 }

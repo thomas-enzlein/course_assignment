@@ -1,20 +1,29 @@
 #' Daten importieren und validieren
 #'
-#' Liest Schueler- und Kursdaten aus CSV-Dateien ein und validiert die Struktur rigoros.
+#' Liest Schueler- und Kursdaten aus einer Excel-Datei (.xlsx) ein.
+#' Die Datei muss zwei Reiter haben: "Schüler" und "Kurse".
 #' Falls kein `tie_breaker` vorhanden ist, wird dieser automatisch generiert.
 #'
-#' @param students_file Pfad zur CSV-Datei mit Schuelerdaten.
-#' @param courses_file Pfad zur CSV-Datei mit Kursdaten.
+#' @param file_path Pfad zur Excel-Datei (.xlsx).
 #' @return Eine Liste mit zwei Elementen: `students` und `courses` als data.frames.
 #' @export
-#' @importFrom utils read.csv head write.csv
+#' @importFrom readxl read_excel excel_sheets
+#' @importFrom utils head write.csv
 #' @importFrom stats runif aggregate
-import_data <- function(students_file, courses_file) {
-  if (!file.exists(students_file)) stop(sprintf("Die Datei '%s' konnte nicht gefunden werden.", students_file))
-  if (!file.exists(courses_file)) stop(sprintf("Die Datei '%s' konnte nicht gefunden werden.", courses_file))
-
-  students <- read.csv(students_file, stringsAsFactors = FALSE)
-  courses <- read.csv(courses_file, stringsAsFactors = FALSE)
+import_data <- function(file_path) {
+  if (!file.exists(file_path)) stop(sprintf("Die Datei '%s' konnte nicht gefunden werden.", file_path))
+  
+  sheets <- readxl::excel_sheets(file_path)
+  
+  # Suche nach passenden Reitern (Case-insensitive)
+  s_sheet <- sheets[tolower(sheets) %in% c("schüler", "schueler", "students")]
+  c_sheet <- sheets[tolower(sheets) %in% c("kurse", "courses")]
+  
+  if (length(s_sheet) == 0) stop("Die Excel-Datei muss einen Reiter 'Schüler' enthalten.")
+  if (length(c_sheet) == 0) stop("Die Excel-Datei muss einen Reiter 'Kurse' enthalten.")
+  
+  students <- as.data.frame(readxl::read_excel(file_path, sheet = s_sheet[1]))
+  courses <- as.data.frame(readxl::read_excel(file_path, sheet = c_sheet[1]))
 
   # 1. Kurse Validierung
   req_course_cols <- c("course_id", "min_capacity", "max_capacity")
@@ -47,6 +56,34 @@ import_data <- function(students_file, courses_file) {
   if (!"student_name" %in% names(students)) {
     warning("HINWEIS: Die Spalte 'student_name' fehlt in den Schueler-Daten. Im Export wird nur die ID angezeigt.")
     students$student_name <- students$student_id
+  }
+
+  # 3. Spalten standardisieren (Gender & Klasse)
+  # Gender Aliases
+  gender_alias <- c("gender", "geschlecht", "m/w", "sex")
+  found_gender <- names(students)[tolower(names(students)) %in% gender_alias]
+  if (length(found_gender) > 0) {
+    names(students)[names(students) == found_gender[1]] <- "gender"
+    # Werte vereinheitlichen (m/w)
+    students$gender <- tolower(as.character(students$gender))
+    students$gender[students$gender %in% c("m\u00e4nnlich", "male", "m", "1")] <- "m"
+    students$gender[students$gender %in% c("weiblich", "female", "w", "2", "f")] <- "w"
+  } else {
+    students$gender <- "k.A." # keine Angabe
+  }
+
+  # Class Aliases
+  class_alias <- c("class", "klasse", "stufe", "jahrgang")
+  found_class <- names(students)[tolower(names(students)) %in% class_alias]
+  if (length(found_class) > 0) {
+    names(students)[names(students) == found_class[1]] <- "class"
+  } else {
+    students$class <- "k.A."
+  }
+
+  # Optionaler Klassen-Name (Klasse oder class)
+  if ("Klasse" %in% names(students) && !"class" %in% names(students)) {
+    students$class <- students$Klasse
   }
 
   # Validierung, ob die gewaehlten Kurse ueberhaupt in der Kursliste existieren
@@ -89,8 +126,8 @@ export_results <- function(result, courses, students, output_dir = ".") {
   assignments <- result$assignments
 
   # Wahl-Nummer und Schueler-Namen ermitteln
-  # Da students jetzt optional student_name hat, nehmen wir das mit
-  cols_students <- intersect(names(students), c("student_id", "student_name", "first_choice", "second_choice", "third_choice"))
+  # Da students jetzt optional student_name und class/Klasse hat, nehmen wir das mit
+  cols_students <- intersect(names(students), c("student_id", "student_name", "class", "Klasse", "first_choice", "second_choice", "third_choice"))
   assignments <- merge(assignments, students[, cols_students], by = "student_id", all.x = TRUE)
 
   assignments$choice_num <- "Zufall/Reste"
@@ -101,19 +138,24 @@ export_results <- function(result, courses, students, output_dir = ".") {
   # Fuer Lesbarkeit Kurs-Namen anfuegen, falls vorhanden
   if ("course_name" %in% names(courses)) {
     assignments <- merge(assignments, courses[, c("course_id", "course_name")], by = "course_id", all.x = TRUE)
-    # Spalten sinnvoll sortieren
-    if ("student_name" %in% names(assignments)) {
-      assignments <- assignments[, c("student_id", "student_name", "course_id", "course_name", "choice_num")]
-    } else {
-      assignments <- assignments[, c("student_id", "course_id", "course_name", "choice_num")]
-    }
-  } else {
-    if ("student_name" %in% names(assignments)) {
-      assignments <- assignments[, c("student_id", "student_name", "course_id", "choice_num")]
-    } else {
-      assignments <- assignments[, c("student_id", "course_id", "choice_num")]
-    }
   }
+  
+  # Spalten sinnvoll sortieren
+  final_assign_cols <- c("student_id")
+  if ("student_name" %in% names(assignments)) final_assign_cols <- c(final_assign_cols, "student_name")
+  
+  # Behandle class oder Klasse
+  if ("class" %in% names(assignments)) {
+    final_assign_cols <- c(final_assign_cols, "class")
+  } else if ("Klasse" %in% names(assignments)) {
+    final_assign_cols <- c(final_assign_cols, "Klasse")
+  }
+
+  final_assign_cols <- c(final_assign_cols, "course_id")
+  if ("course_name" %in% names(assignments)) final_assign_cols <- c(final_assign_cols, "course_name")
+  final_assign_cols <- c(final_assign_cols, "choice_num")
+  
+  assignments <- assignments[, final_assign_cols]
 
   # Sortieren nach Kurs und Schueler
   assignments <- assignments[order(assignments$course_id, assignments$student_id), ]

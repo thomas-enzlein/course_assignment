@@ -25,35 +25,31 @@ ui <- page_sidebar(
         div(
           class = "d-flex align-items-center mb-3",
           shinyFiles::shinyFilesButton(
-            "file_students", "Schüler wählen...",
-            title = "Schüler-CSV auswählen", multiple = FALSE,
-            buttonType = "default", class = "btn-sm me-2"
-          ),
-          uiOutput("status_students")
+            "file_total", "Excel-Datei wählen...",
+            title = "Gesamt-Excel-Datei (.xlsx) auswählen", multiple = FALSE,
+            buttonType = "primary", class = "btn-sm me-2 w-100"
+          )
         ),
-        div(
-          class = "d-flex align-items-center mb-3",
-          shinyFiles::shinyFilesButton(
-            "file_courses", "Kurse wählen...",
-            title = "Kurs-CSV auswählen", multiple = FALSE,
-            buttonType = "default", class = "btn-sm me-2"
-          ),
-          uiOutput("status_courses")
-        ),
+        uiOutput("status_total"),
         actionButton(
           "btn_reload", "Daten neu laden",
-          icon = icon("refresh"), class = "btn-outline-secondary btn-sm w-100"
+          icon = icon("refresh"), class = "btn-outline-secondary btn-sm w-100 mb-2"
         ),
-        helpText("Wähle die CSV-Dateien direkt auf deiner Festplatte aus.")
+        downloadButton(
+          "export_templates", "Leere Vorlage herunterladen",
+          icon = icon("download"), class = "btn-outline-primary btn-sm w-100"
+        ),
+        helpText("Die Excel-Datei muss zwei Reiter enthalten: 'Schüler' und 'Kurse'.")
       ),
     card(
       card_header("Parameter"),
-      sliderInput("time_limit", "Zeitlimit (Sekunden)", min = 5, max = 120, value = 15),
-      checkboxInput("enforce_survival", "Kurse 'retten' (Enforce Survival)", value = FALSE)
+      checkboxInput("enforce_survival", "Kurse 'retten'", value = FALSE),
+      checkboxInput("use_balance_gender", "Geschlechter-Balance", value = FALSE),
+      checkboxInput("use_balance_class", "Klassen-Durchmischung", value = FALSE)
     ),
     input_task_button("run_opt", "Optimierung starten", icon = icon("rocket")),
     br(),
-    downloadButton("export_results", "CSV Daten (ZIP)", class = "btn-secondary w-100 mb-2"),
+    downloadButton("export_excel", "Ergebnisse (Excel)", class = "btn-success w-100 mb-2", icon = icon("file-excel")),
     downloadButton("export_pdf", "Bericht (PDF)", class = "btn-info w-100", icon = icon("file-pdf"))
   ),
 
@@ -128,6 +124,20 @@ ui <- page_sidebar(
       card(
         card_header("Schüler ohne Zuweisung"),
         DTOutput("table_unassigned")
+      )
+    ),
+    nav_panel(
+      "Einstellungen",
+      card(
+        card_header("Gewichtung & Logik"),
+        sliderInput("time_limit", "Zeitlimit für Solver (Sekunden)", min = 5, max = 120, value = 15),
+        helpText("Das Zeitlimit für die mathematische Optimierung. Mehr Zeit führt oft zu besseren Ergebnissen bei sehr vielen Schülern."),
+        hr(),
+        sliderInput("weight_gender", "Stärke Geschlechter-Balance", min = 0, max = 100, value = 50),
+        helpText("Höhere Werte zwingen den Algorithmus zu einer 50/50 Verteilung, auch wenn dafür Wünsche geopfert werden müssen."),
+        hr(),
+        sliderInput("weight_class", "Stärke Klassen-Durchmischung", min = 0, max = 100, value = 50),
+        helpText("Höhere Werte sorgen dafür, dass Schüler aus derselben Klasse möglichst auf verschiedene Kurse verteilt werden.")
       )
     )
   )

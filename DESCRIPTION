@@ -1,6 +1,6 @@
 Package: kurszuweisung
 Title: Global School Course Selection Optimization with MILP
-Version: 1.0.0
+Version: 1.1.0
 Authors@R: person("Thomas Enzlein", email = "thomas.enzlein@gmail.com", role = c("aut", "cre"))
 Description: Erlaubt Schulen die globale und faire Optimierung ihrer
     Kurswahlen durch den Einsatz von Mixed-Integer Linear Programming mit ompr und glpk.
@@ -19,9 +19,11 @@ Imports:
     shinyFiles,
     bslib,
     shinyjs,
+    writexl,
     DT,
     plotly,
     jsonlite,
+    readxl,
     rmarkdown,
     knitr,
     pandoc,

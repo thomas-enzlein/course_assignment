@@ -1,19 +1,17 @@
 test_that("import_data checks required files and structure", {
-  # Temporäre Dateien erzeugen
+  # Temporäre Excel-Datei erzeugen
   dir_path <- tempdir()
-  c_file <- file.path(dir_path, "c_test.csv")
-  s_file <- file.path(dir_path, "s_test.csv")
+  excel_file <- file.path(dir_path, "test_data.xlsx")
 
   # Gültige Kurse
-  c_data <- data.frame(course_id = c("A", "B", "C"), min_capacity = c(2, 2, 2), max_capacity = c(5, 5, 5), stringsAsFactors = FALSE)
-  write.csv(c_data, c_file, row.names = FALSE)
-
+  c_data <- data.frame(course_id = c("A", "B", "C"), course_name = c("n1", "n2", "n3"), min_capacity = c(2, 2, 2), max_capacity = c(5, 5, 5), stringsAsFactors = FALSE)
   # Gültige Schüler (ohne tie_breaker)
-  s_data <- data.frame(student_id = c("1", "2"), first_choice = c("A", "B"), second_choice = c("B", "C"), third_choice = c("C", "A"), stringsAsFactors = FALSE)
-  write.csv(s_data, s_file, row.names = FALSE)
+  s_data <- data.frame(student_id = c("1", "2"), student_name = c("n1", "n2"), first_choice = c("A", "B"), second_choice = c("B", "C"), third_choice = c("C", "A"), stringsAsFactors = FALSE)
+
+  writexl::write_xlsx(list("Kurse" = c_data, "Schüler" = s_data), excel_file)
 
   # Valid import
-  res <- import_data(s_file, c_file)
+  res <- import_data(excel_file)
   expect_equal(nrow(res$courses), 3)
   expect_equal(nrow(res$students), 2)
   expect_true("tie_breaker" %in% names(res$students)) # wurde auto-generiert
@@ -21,13 +19,12 @@ test_that("import_data checks required files and structure", {
   # Defekter Schüler (Wahl existiert nicht)
   s_data_bad <- s_data
   s_data_bad$first_choice[1] <- "D"
-  write.csv(s_data_bad, s_file, row.names = FALSE)
+  writexl::write_xlsx(list("Kurse" = c_data, "Schüler" = s_data_bad), excel_file)
 
-  expect_error(import_data(s_file, c_file), "existieren")
+  expect_error(import_data(excel_file), "existieren")
 
   # Cleanup
-  unlink(c_file)
-  unlink(s_file)
+  unlink(excel_file)
 })
 
 test_that("export_results works", {
@@ -49,22 +46,26 @@ test_that("export_results works", {
 })
 
 test_that("import_data handles missing files", {
-  expect_error(import_data("nonexistent.csv", "nonexistent2.csv"), "Datei.*konnte nicht gefunden werden")
+  expect_error(import_data("nonexistent.xlsx"), "Datei.*konnte nicht gefunden werden")
 })
 
 test_that("import_data handles validation errors", {
   # Create some temp files with bad data
-  c_bad <- tempfile(fileext = ".csv")
-  s_ok <- tempfile(fileext = ".csv")
+  excel_bad <- tempfile(fileext = ".xlsx")
   
-  write.csv(data.frame(bad_col = 1), c_bad, row.names = FALSE)
-  write.csv(data.frame(student_id = "1", first_choice = "A", second_choice = "A", third_choice = "A"), s_ok, row.names = FALSE)
+  c_bad <- data.frame(bad_col = 1, course_name = "n")
+  s_ok <- data.frame(student_id = "1", student_name = "n", first_choice = "A", second_choice = "A", third_choice = "A")
   
-  expect_error(import_data(s_ok, c_bad), "Es fehlen zwingend benoetigte Spalten")
+  writexl::write_xlsx(list("Kurse" = c_bad, "Schüler" = s_ok), excel_bad)
+  expect_error(import_data(excel_bad), "Es fehlen zwingend benoetigte Spalten")
   
   # Duplicated course_id
-  write.csv(data.frame(course_id = c("A", "A"), min_capacity = 1, max_capacity = 2), c_bad, row.names = FALSE)
-  expect_error(import_data(s_ok, c_bad), "Die 'course_id' muss absolut eindeutig sein")
+  c_dup <- data.frame(course_id = c("A", "A"), min_capacity = 1, max_capacity = 2)
+  writexl::write_xlsx(list("Kurse" = c_dup, "Schüler" = s_ok), excel_bad)
+  expect_error(import_data(excel_bad), "Die 'course_id' muss absolut eindeutig sein")
+  
+  # Cleanup
+  unlink(excel_bad)
 })
 
 test_that("update_course_capacity validates and updates correctly", {

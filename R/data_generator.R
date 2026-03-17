@@ -132,6 +132,10 @@ generate_students <- function(n = 300, courses) {
       weights[courses$course_name %in% m_fav] <- weights[courses$course_name %in% m_fav] * 2.5
     }
 
+    # Zufällige Klasse (optional)
+    klassen_liste <- c("7a", "7b", "8a", "8b", "9a", "9b", "10a", "10b")
+    kl <- sample(klassen_liste, 1)
+
     weights <- weights * runif(length(weights), 0.4, 2.5)
     s_choices <- sample(courses$course_id, size = 3, replace = FALSE, prob = weights)
     
@@ -139,13 +143,44 @@ generate_students <- function(n = 300, courses) {
       student_id = sprintf("S%03d", i),
       student_name = paste(vor, nach),
       gender = genders[i],
+      class = kl,
       first_choice = s_choices[1],
       second_choice = s_choices[2],
       third_choice = s_choices[3],
-      tie_breaker = runif(1, 0.001, 0.099),
       stringsAsFactors = FALSE
     )
   }
 
   do.call(rbind, results)
+}
+
+#' Pfade zu den Demo-Daten abrufen
+#'
+#' @return Der Pfad zur Gesamt-Excel-Vorlage (.xlsx)
+#' @export
+get_demo_paths <- function() {
+  t_path <- system.file("extdata", "kurszuweisung_vorlage.xlsx", package = "kurszuweisung")
+  
+  # Fallback fuer Entwicklung im Projekt-Root
+  if (t_path == "" || !file.exists(t_path)) {
+    t_path <- "Beispieldaten/kurszuweisung_vorlage.xlsx"
+  }
+  
+  return(t_path)
+}
+
+#' Demo-Excel Datei generieren
+#'
+#' @param path Zielpfad
+#' @export
+generate_demo_excel <- function(path) {
+  courses <- generate_courses()
+  students <- generate_students(300, courses)
+  
+  sheets <- list(
+    "Schüler" = students,
+    "Kurse" = courses
+  )
+  
+  writexl::write_xlsx(sheets, path = path)
 }

@@ -8,6 +8,8 @@ optimize_courses(
   students,
   courses,
   enforce_survival = FALSE,
+  balance_gender = 0,
+  balance_class = 0,
   time_limit_sec = 15
 )
 }
@@ -17,6 +19,10 @@ optimize_courses(
 \item{courses}{data.frame mit Kurs-Kapazitaeten}
 
 \item{enforce_survival}{Logisch, ob Kurse bevorzugt gerettet werden sollen. Standard ist FALSE.}
+
+\item{balance_gender}{Numerisch (0-100), Staerke der Geschlechter-Gleichverteilung. Standard ist 0.}
+
+\item{balance_class}{Numerisch (0-100), Staerke der Klassen-Durchmischung. Standard ist 0.}
 
 \item{time_limit_sec}{Zeitlimit fuer den Solver in Sekunden. Standard ist 15.}
 }

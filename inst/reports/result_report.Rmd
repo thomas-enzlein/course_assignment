@@ -39,8 +39,23 @@ df <- merge(df, params$courses[, c("course_id", "course_name")], by = "course_id
 # Sortierung
 df <- df[order(df$course_name, df$student_name), ]
 
-display_df <- df[, c("course_name", "student_name", "student_id")]
-colnames(display_df) <- c("Kurs", "Schüler-Name", "ID")
+# Kursname und ID kombinieren
+df$course_display <- paste0(df$course_name, " (", df$course_id, ")")
+
+# Spaltenauswahl basierend auf Vorhandensein
+final_cols <- c("course_display", "student_name")
+if ("class" %in% names(df)) {
+  final_cols <- c(final_cols, "class")
+} else if ("Klasse" %in% names(df)) {
+  final_cols <- c(final_cols, "Klasse")
+  df$class <- df$Klasse # Normalisierung fuer friendly_names
+}
+final_cols <- c(final_cols, "student_id")
+
+display_df <- df[, final_cols]
+
+friendly_names <- c("Kurs (ID)", "Schüler-Name", "Klasse", "ID")
+colnames(display_df) <- friendly_names[c(TRUE, TRUE, "class" %in% names(df), TRUE)]
 
 knitr::kable(display_df, longtable = TRUE)
 ```
@@ -54,8 +69,31 @@ Schüler, für die kein Kurs gefunden werden konnte.
 ```{r unassigned}
 unassigned_df <- eval_res$rest_students
 if (nrow(unassigned_df) > 0) {
-  display_un <- unassigned_df[, c("student_name", "student_id", "reason_1", "reason_2", "reason_3")]
-  colnames(display_un) <- c("Name", "ID", "Grund 1", "Grund 2", "Grund 3")
+  # Helper fuer Grund + Kursname
+  map_reason <- function(id, reason) {
+    if (is.na(id) || id == "" || reason == "-") return("-")
+    cname <- params$courses$course_name[params$courses$course_id == id]
+    if (length(cname) == 0) cname <- id
+    paste0(cname, ": ", reason)
+  }
+  
+  unassigned_df$reason_1 <- vapply(seq_len(nrow(unassigned_df)), function(i) map_reason(unassigned_df$first_choice[i], unassigned_df$reason_1[i]), character(1))
+  unassigned_df$reason_2 <- vapply(seq_len(nrow(unassigned_df)), function(i) map_reason(unassigned_df$second_choice[i], unassigned_df$reason_2[i]), character(1))
+  unassigned_df$reason_3 <- vapply(seq_len(nrow(unassigned_df)), function(i) map_reason(unassigned_df$third_choice[i], unassigned_df$reason_3[i]), character(1))
+
+  final_cols_un <- c("student_name")
+  if ("class" %in% names(unassigned_df)) {
+    final_cols_un <- c(final_cols_un, "class")
+  } else if ("Klasse" %in% names(unassigned_df)) {
+    final_cols_un <- c(final_cols_un, "Klasse")
+    unassigned_df$class <- unassigned_df$Klasse
+  }
+  final_cols_un <- c(final_cols_un, "student_id", "reason_1", "reason_2", "reason_3")
+  
+  display_un <- unassigned_df[, final_cols_un]
+  
+  friendly_names_un <- c("Name", "Klasse", "ID", "1. Wunsch", "2. Wunsch", "3. Wunsch")
+  colnames(display_un) <- friendly_names_un[c(TRUE, "class" %in% names(unassigned_df), TRUE, TRUE, TRUE, TRUE)]
   knitr::kable(display_un)
 } else {
   cat("Alle Schüler wurden erfolgreich zugewiesen.")

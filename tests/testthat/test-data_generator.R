@@ -21,9 +21,6 @@ test_that("generate_students works correctly", {
     expect_equal(length(unique(choices)), 3)
     expect_true(all(choices %in% courses$course_id))
   }
-
-  # Check tie-breaker range
-  expect_true(all(students$tie_breaker >= 0.001 & students$tie_breaker <= 0.099))
 })
 
 test_that("generate_students throws errors on invalid input", {

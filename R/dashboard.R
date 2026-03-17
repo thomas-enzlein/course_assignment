@@ -88,8 +88,45 @@ evaluate_dashboard <- function(res, students, courses) {
     counts <- as.data.frame(table(assignments$course_id))
     names(counts) <- c("course_id", "participants")
     counts$course_id <- as.character(counts$course_id)
+    
+    # NEU: Gender-Split pro Kurs
+    if (!"gender" %in% names(students)) {
+      students$gender <- "k.A."
+    }
+    
+    ass_with_gender <- merge(assignments, students[, c("student_id", "gender")], by = "student_id")
+    gender_counts <- as.data.frame(table(ass_with_gender$course_id, ass_with_gender$gender))
+    if (nrow(gender_counts) > 0) {
+      names(gender_counts) <- c("course_id", "gender", "count")
+      gender_counts$course_id <- as.character(gender_counts$course_id)
+      
+      counts_m <- gender_counts[gender_counts$gender == "m", c("course_id", "count")]
+      names(counts_m)[2] <- "participants_m"
+      
+      counts_w <- gender_counts[gender_counts$gender == "w", c("course_id", "count")]
+      names(counts_w)[2] <- "participants_w"
+      
+      counts <- merge(counts, counts_m, by = "course_id", all.x = TRUE)
+      counts <- merge(counts, counts_w, by = "course_id", all.x = TRUE)
+      
+      # NEU: Alles andere (k.A. oder sonstige)
+      counts$participants_m[is.na(counts$participants_m)] <- 0
+      counts$participants_w[is.na(counts$participants_w)] <- 0
+      counts$participants_other <- counts$participants - counts$participants_m - counts$participants_w
+    } else {
+      counts$participants_m <- 0
+      counts$participants_w <- 0
+      counts$participants_other <- counts$participants
+    }
   } else {
-    counts <- data.frame(course_id = character(), participants = integer(), stringsAsFactors = FALSE)
+    counts <- data.frame(
+      course_id = character(), 
+      participants = integer(), 
+      participants_m = integer(), 
+      participants_w = integer(),
+      participants_other = integer(),
+      stringsAsFactors = FALSE
+    )
   }
 
   # Merge mit allen Kursen
@@ -97,7 +134,16 @@ evaluate_dashboard <- function(res, students, courses) {
   course_stats <- merge(course_stats, interest_counts, by = "course_id", all.x = TRUE)
   
   course_stats$participants[is.na(course_stats$participants)] <- 0
+  course_stats$participants_m[is.na(course_stats$participants_m)] <- 0
+  course_stats$participants_w[is.na(course_stats$participants_w)] <- 0
+  course_stats$participants_other[is.na(course_stats$participants_other)] <- 0
   course_stats$total_interest[is.na(course_stats$total_interest)] <- 0
+
+  # Detaillierte Spalten fuer die UI (Immer mit korrekter Laenge initialisieren)
+  n_rest <- nrow(rest_students)
+  rest_students$reason_1 <- rep("-", n_rest)
+  rest_students$reason_2 <- rep("-", n_rest)
+  rest_students$reason_3 <- rep("-", n_rest)
 
   # --- ENHANCEMENT: WHY WERE THEY NOT ASSIGNED? ---
   if (nrow(rest_students) > 0) {
@@ -114,7 +160,6 @@ evaluate_dashboard <- function(res, students, courses) {
       paste(st_reasons, collapse = " | ")
     }, character(1))
     
-    # Detaillierte Spalten fuer die UI
     rest_students$reason_1 <- vapply(rest_students$first_choice, function(cid) {
        if (is.na(cid) || cid == "") return("-")
        st <- course_stats[course_stats$course_id == cid, ]
@@ -160,8 +205,34 @@ evaluate_dashboard <- function(res, students, courses) {
   }
   cat("====================================================\n")
 
+  # Gender-split satisfaction
+  cols_needed <- c("student_id", "gender", "first_choice", "second_choice", "third_choice")
+  cols_to_merge <- intersect(names(students), cols_needed)
+  ass_with_gender <- merge(assignments, students[, cols_to_merge, drop = FALSE], by = "student_id", all.x = TRUE)
+  rest_with_gender <- rest_students # rest_students already comes from students and has all columns
+  
+  choice_1_m <- sum(ass_with_gender$gender == "m" & ass_with_gender$course_id == ass_with_gender$first_choice, na.rm = TRUE)
+  choice_1_w <- sum(ass_with_gender$gender == "w" & ass_with_gender$course_id == ass_with_gender$first_choice, na.rm = TRUE)
+  choice_1_other <- choice_1 - choice_1_m - choice_1_w
+  
+  choice_2_m <- sum(ass_with_gender$gender == "m" & ass_with_gender$course_id == ass_with_gender$second_choice, na.rm = TRUE)
+  choice_2_w <- sum(ass_with_gender$gender == "w" & ass_with_gender$course_id == ass_with_gender$second_choice, na.rm = TRUE)
+  choice_2_other <- choice_2 - choice_2_m - choice_2_w
+  
+  choice_3_m <- sum(ass_with_gender$gender == "m" & ass_with_gender$course_id == ass_with_gender$third_choice, na.rm = TRUE)
+  choice_3_w <- sum(ass_with_gender$gender == "w" & ass_with_gender$course_id == ass_with_gender$third_choice, na.rm = TRUE)
+  choice_3_other <- choice_3 - choice_3_m - choice_3_w
+  
+  unassigned_m <- sum(rest_with_gender$gender == "m", na.rm = TRUE)
+  unassigned_w <- sum(rest_with_gender$gender == "w", na.rm = TRUE)
+  unassigned_other <- unassigned - unassigned_m - unassigned_w
+
   invisible(list(
     choice_1 = choice_1, choice_2 = choice_2, choice_3 = choice_3, unassigned = unassigned,
+    choice_1_m = choice_1_m, choice_1_w = choice_1_w, choice_1_other = choice_1_other,
+    choice_2_m = choice_2_m, choice_2_w = choice_2_w, choice_2_other = choice_2_other,
+    choice_3_m = choice_3_m, choice_3_w = choice_3_w, choice_3_other = choice_3_other,
+    unassigned_m = unassigned_m, unassigned_w = unassigned_w, unassigned_other = unassigned_other,
     course_stats = course_stats, rest_students = rest_students
   ))
 }

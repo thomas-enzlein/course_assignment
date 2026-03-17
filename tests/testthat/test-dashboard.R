@@ -85,3 +85,25 @@ test_that("evaluate_dashboard works correctly", {
   })
   expect_true(any(grepl("... und weitere.", out)))
 })
+
+test_that("evaluate_dashboard always provides reason columns", {
+  students <- data.frame(
+    student_id = "1", student_name = "test",
+    first_choice = "C1", second_choice = "C2", third_choice = "C3",
+    tie_breaker = 0.01, stringsAsFactors = FALSE
+  )
+  courses <- data.frame(
+    course_id = c("C1", "C2", "C3"), course_name = "test",
+    min_capacity = 1, max_capacity = 2, stringsAsFactors = FALSE
+  )
+  res_mock <- list(
+    assignments = data.frame(student_id = "1", course_id = "C1", stringsAsFactors = FALSE),
+    status = "optimal", objective_value = 100
+  )
+  
+  eval_res <- evaluate_dashboard(res_mock, students, courses)
+  expect_equal(nrow(eval_res$rest_students), 0)
+  expect_true("reason_1" %in% names(eval_res$rest_students))
+  expect_true("reason_2" %in% names(eval_res$rest_students))
+  expect_true("reason_3" %in% names(eval_res$rest_students))
+})

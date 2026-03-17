@@ -13,11 +13,8 @@ load_config <- function() {
       {
         config <- jsonlite::fromJSON(CONFIG_FILE)
         # Validate paths - if files don't exist anymore, clear them
-        if (!is.null(config$students_path) && !file.exists(config$students_path)) {
-          config$students_path <- NULL
-        }
-        if (!is.null(config$courses_path) && !file.exists(config$courses_path)) {
-          config$courses_path <- NULL
+        if (!is.null(config$data_path) && !file.exists(config$data_path)) {
+          config$data_path <- NULL
         }
         config
       },
@@ -32,16 +29,24 @@ load_config <- function() {
 
 #' Save the configuration
 #'
-#' @param students_path Absolute path to students CSV
-#' @param courses_path Absolute path to courses CSV
+#' @param data_path Absolute path to the total Excel file
 #' @param time_limit Time limit in seconds
 #' @param enforce_survival Logical, enforce survival mode
-save_config <- function(students_path, courses_path, time_limit, enforce_survival) {
+#' @param use_balance_gender Logical, use gender balancing
+#' @param use_balance_class Logical, use class balancing
+#' @param weight_gender Numeric weight for gender balancing
+#' @param weight_class Numeric weight for class balancing
+save_config <- function(data_path, time_limit, enforce_survival,
+                        use_balance_gender = FALSE, use_balance_class = FALSE,
+                        weight_gender = 50, weight_class = 50) {
   config <- list(
-    students_path = students_path,
-    courses_path = courses_path,
+    data_path = data_path,
     time_limit = time_limit,
     enforce_survival = enforce_survival,
+    use_balance_gender = use_balance_gender,
+    use_balance_class = use_balance_class,
+    weight_gender = weight_gender,
+    weight_class = weight_class,
     last_updated = Sys.time()
   )
   tryCatch(

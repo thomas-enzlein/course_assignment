@@ -4,17 +4,16 @@
 \alias{import_data}
 \title{Daten importieren und validieren}
 \usage{
-import_data(students_file, courses_file)
+import_data(file_path)
 }
 \arguments{
-\item{students_file}{Pfad zur CSV-Datei mit Schuelerdaten.}
-
-\item{courses_file}{Pfad zur CSV-Datei mit Kursdaten.}
+\item{file_path}{Pfad zur Excel-Datei (.xlsx).}
 }
 \value{
 Eine Liste mit zwei Elementen: \code{students} und \code{courses} als data.frames.
 }
 \description{
-Liest Schueler- und Kursdaten aus CSV-Dateien ein und validiert die Struktur rigoros.
+Liest Schueler- und Kursdaten aus einer Excel-Datei (.xlsx) ein.
+Die Datei muss zwei Reiter haben: "Schüler" und "Kurse".
 Falls kein \code{tie_breaker} vorhanden ist, wird dieser automatisch generiert.
 }
